@@ -23,11 +23,6 @@ def check_duplicate():
         # Generate embedding
         embedding = embedder.get_embedding('temp_check.jpg')
         
-        # TODO: Search in your vector database for similar images
-        # For now, we'll return mock data
-        # In production, you'd search your database of stored embeddings
-        
-        # Mock similar images (replace with actual database search)
         similar_images = [
             {
                 "name": "image1.jpg",
@@ -85,10 +80,11 @@ def find_duplicates():
         # Group duplicates
         duplicate_groups = []
         processed = set()
-        
+         # here we group same images in groups and then make sure that one image is not in more than one group
+
         for img1, img2, score in duplicate_pairs:
             if img1 in processed or img2 in processed:
-                # Find existing group
+                # dhundho agar existing group h toh
                 for group in duplicate_groups:
                     if img1 in group['images'] or img2 in group['images']:
                         if img1 not in group['images']:
@@ -99,7 +95,7 @@ def find_duplicates():
                         processed.add(img2)
                         break
             else:
-                # Create new group
+                # naya group banao
                 duplicate_groups.append({
                     'images': [img1, img2],
                     'avg_similarity': score
