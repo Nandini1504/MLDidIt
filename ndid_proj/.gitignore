@@ -31,3 +31,11 @@ models/*.pt
 # OS
 .DS_Store
 Thumbs.db
+
+# Ignore large datasets
+raw/*.csv
+raw/**/*.csv
+raw/*.tar
+raw/**/*.tar
+raw/processed/
+raw/features/
