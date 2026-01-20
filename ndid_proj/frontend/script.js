@@ -6,15 +6,13 @@ let singleImageData = null;
 let bulkImagesData = []; // Array of {name, data}
 let startTime = null;
 
-// Initialize
+
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     checkAPIHealth();
 });
 
-/* ================================================
-   EVENT LISTENERS SETUP
-================================================ */
+
 function setupEventListeners() {
     // Threshold slider
     document.getElementById('threshold').addEventListener('input', (e) => {
@@ -29,10 +27,6 @@ function setupEventListeners() {
     document.getElementById('images-bulk').addEventListener('change', handleBulkImageUpload);
     setupDragAndDrop('zone-bulk', 'images-bulk', 'bulk');
 }
-
-/* ================================================
-   MODE SWITCHING
-================================================ */
 function switchMode(mode) {
     currentMode = mode;
     
@@ -62,9 +56,7 @@ function switchMode(mode) {
     }
 }
 
-/* ================================================
-   DRAG & DROP SETUP
-================================================ */
+
 function setupDragAndDrop(zoneId, inputId, type) {
     const zone = document.getElementById(zoneId);
     
@@ -109,9 +101,7 @@ function setupDragAndDrop(zoneId, inputId, type) {
     });
 }
 
-/* ================================================
-   SCENARIO 1: SINGLE IMAGE FUNCTIONS
-================================================ */
+
 function handleSingleImageUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -130,8 +120,7 @@ function handleSingleImageUpload(event) {
     const reader = new FileReader();
     reader.onload = (e) => {
         singleImageData = e.target.result;
-        
-        // Update UI
+
         const preview = document.getElementById('preview-single');
         const zone = document.getElementById('zone-single');
         const removeBtn = document.getElementById('remove-single');
@@ -141,10 +130,10 @@ function handleSingleImageUpload(event) {
         zone.style.display = 'none';
         removeBtn.style.display = 'block';
         
-        // Enable button
+        
         document.getElementById('checkDuplicateBtn').disabled = false;
         
-        // Animation
+       
         preview.style.animation = 'scaleIn 0.5s ease';
     };
     
@@ -283,9 +272,7 @@ function displayScenario1Results(result, processingTime) {
     }, 100);
 }
 
-/* ================================================
-   SCENARIO 2: BULK UPLOAD FUNCTIONS
-================================================ */
+
 function handleBulkImageUpload(event) {
     const files = Array.from(event.target.files);
     
@@ -523,9 +510,7 @@ async function checkAPIHealth() {
     }
 }
 
-/* ================================================
-   KEYBOARD SHORTCUTS
-================================================ */
+
 document.addEventListener('keydown', (e) => {
     // Press '1' to switch to Scenario 1
     if (e.key === '1') {
@@ -558,9 +543,6 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-/* ================================================
-   CONSOLE INITIALIZATION
-================================================ */
 console.log('%c🖼️ NDID - Near-Duplicate Image Detection', 'font-size: 20px; font-weight: bold; color: #667eea;');
 console.log('%cPowered by ResNet50 & Flask API', 'font-size: 12px; color: #999;');
 console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color: #667eea;');
