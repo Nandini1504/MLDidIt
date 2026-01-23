@@ -1,5 +1,11 @@
-# Ignore the actual weights file
+# Ignore Weights
 weights/*.pth
-temp_*.jpg
+
+# Ignore Python cache
 __pycache__/
+*.pyc
+
+# Ignore temp uploads and OS files
+static/uploads/*
+.DS_Store
 .env

@@ -1,0 +1,10 @@
+flask
+flask-cors
+torch
+torchvision
+Pillow
+gdown
+requests
+faiss-cpu
+timm
+tqdm

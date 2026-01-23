@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NDID | AI Duplicate Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🖼️ NDID System</h1>
+        <p style="color: var(--text-muted)">Near-Duplicate Image Detection powered by ResNet50</p>
+    </header>
+
+    <div class="tabs">
+        <button class="mode-tab active" id="tab-scenario1" onclick="switchMode('scenario1')">Single Check</button>
+        <button class="mode-tab" id="tab-scenario2" onclick="switchMode('scenario2')">Bulk Upload</button>
+    </div>
+
+    <div class="results-section" style="margin-bottom: 20px;">
+        <label>Similarity Threshold: <span id="threshold-value">0.34</span></label>
+        <input type="range" id="threshold" min="0" max="1" step="0.01" value="0.4126" style="width: 100%;">
+        <select id="metric" style="margin-top: 10px; width: 100%; padding: 8px; border-radius: 5px;">
+            <option value="cosine">Metric: Cosine Similarity</option>
+            <option value="euclidean">Metric: Euclidean Distance</option>
+        </select>
+    </div>
+
+    <div id="scenario1-content" class="scenario-content active">
+        <div class="upload-zone" id="zone-single">
+            <i class="fas fa-cloud-upload-alt fa-3x"></i>
+            <p>Drag & Drop or Click to Upload Image</p>
+            <input type="file" id="image-single" hidden accept="image/*">
+        </div>
+        <div id="preview-single" style="display:none; text-align:center;"></div>
+        <button id="checkDuplicateBtn" disabled onclick="checkDuplicate()">Run AI Analysis</button>
+    </div>
+
+    <div id="scenario2-content" class="scenario-content" style="display:none;">
+        <div class="upload-zone" id="zone-bulk">
+            <i class="fas fa-images fa-3x"></i>
+            <p>Upload Multiple Images for Comparison</p>
+            <input type="file" id="images-bulk" hidden multiple accept="image/*">
+        </div>
+        <p id="upload-count">0 images selected</p>
+        <div id="bulk-preview-grid" class="bulk-preview-grid"></div>
+        <button id="findDuplicatesBtn" disabled onclick="findDuplicates()">Find Duplicates</button>
+    </div>
+
+    <div id="loading" style="display:none; text-align:center; padding: 20px;">
+        <i class="fas fa-spinner fa-spin fa-2x"></i>
+        <p>AI is processing...</p>
+    </div>
+
+    <div id="results-scenario2" class="results-section" style="display:none;">
+        <h3>Results Summary</h3>
+        <p>Total: <span id="stat-total">0</span> | Groups: <span id="stat-groups">0</span> | Unique: <span id="stat-unique">0</span></p>
+        <div id="duplicate-groups"></div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

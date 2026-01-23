@@ -1,71 +1,92 @@
 import os
-import requests
-from flask import Flask, request, jsonify, render_template
+import io
+import base64
+import gdown
 import torch
-import numpy as np
+from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS
 from PIL import Image
-# Import your model classes from model_utils.py
-from model_utils import SiameseBackbone, SiameseHead 
-def download_weights(file_path, url):
-    if not os.path.exists(file_path):
-        print(f"🚀 Weights not found at {file_path}. Downloading from cloud...")
-        try:
-            # Create directory if it doesn't exist
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            
-            response = requests.get(url, stream=True)
-            response.raise_for_status()
-            
-            with open(file_path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
-            print("✅ Download complete!")
-        except Exception as e:
-            print(f"❌ Error downloading weights: {e}")
-            # You might want to exit the script if weights are missing
-            exit(1)
-    else:
-        print(f"⭐ Weights found at {file_path}. Ready to go!")
-
-# --- CONFIGURATION ---
-WEIGHTS_PATH = 'weights/slim_weights.pth'
-# Replace this with your actual direct download link (Dropbox, GDrive direct, or HuggingFace)
-DOWNLOAD_URL = 'https://your-cloud-link.com/slim_weights.pth'
-
-# Run the downloader
-download_weights(WEIGHTS_PATH, DOWNLOAD_URL)
-
-
-
+from model_utils import SiameseBackbone, get_transform, calculate_similarity
 
 app = Flask(__name__)
+CORS(app)
 
-# --- Load Model & Threshold ---
-BEST_THRESHOLD = 0.3442  # Your optimized value!
+# --- 1. DOWNLOADER CONFIG ---
+WEIGHTS_FOLDER = 'weights'
+WEIGHTS_PATH = os.path.join(WEIGHTS_FOLDER, 'model_final.pth')
+GOOGLE_DRIVE_ID = '1IaGdTjV3O5KklKeqAUtqFHUm99zNoV7I' 
+
+if not os.path.exists(WEIGHTS_PATH):
+    os.makedirs(WEIGHTS_FOLDER, exist_ok=True)
+    url = f'https://drive.google.com/file/d/1IaGdTjV3O5KklKeqAUtqFHUm99zNoV7I/view'
+    gdown.download(url, WEIGHTS_PATH, quiet=False)
+
+# --- 2. MODEL SETUP ---
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = SiameseBackbone().to(device)
+model.load_state_dict(torch.load(WEIGHTS_PATH, map_location=device))
+model.eval()
+transform = get_transform()
 
-backbone = SiameseBackbone().to(device)
-head = SiameseHead().to(device)
+def get_embedding(base64_str):
+    image_data = base64.b64decode(base64_str.split(',')[1])
+    image = Image.open(io.BytesIO(image_data)).convert('RGB')
+    tensor = transform(image).unsqueeze(0).to(device)
+    with torch.no_grad():
+        embedding = model(tensor)
+    return embedding
 
-backbone.load_state_dict(torch.load('weights/backbone.pth', map_location=device))
-head.load_state_dict(torch.load('weights/head.pth', map_location=device))
-backbone.eval()
-head.eval()
-
+# --- 3. ROUTES ---
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/detect-single', methods=['POST'])
-def detect_single():
-    # Logic to receive image, run backbone + head, 
-    # and compare against your vector database
-    pass
+@app.route('/api/check-duplicate', methods=['POST'])
+def check_duplicate():
+    try:
+        data = request.json
+        # Scenario 1 logic: Usually compares against a database. 
+        # For this local demo, we just acknowledge receipt of the embedding.
+        _ = get_embedding(data['image'])
+        return jsonify({"is_duplicate": False, "similar_images": []})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/detect-bulk', methods=['POST'])
-def detect_bulk():
-    # Logic to cluster multiple images using BEST_THRESHOLD
-    pass
+@app.route('/api/find-duplicates', methods=['POST'])
+def find_duplicates_route():
+    try:
+        data = request.json
+        images = data['images']
+        threshold = float(data.get('threshold', 0.4126))
+        metric = data.get('metric', 'cosine')
+
+        # Generate all embeddings
+        embs = {img['name']: get_embedding(img['data']) for img in images}
+        names = list(embs.keys())
+        
+        # Compare pairs
+        duplicate_groups = []
+        processed = set()
+
+        for i in range(len(names)):
+            for j in range(i + 1, len(names)):
+                n1, n2 = names[i], names[j]
+                if n1 in processed and n2 in processed: continue
+                
+                score = calculate_similarity(embs[n1], embs[n2], metric)
+                
+                # Logic for Cosine (High score = Duplicate)
+                if (metric == 'cosine' and score >= threshold):
+                    duplicate_groups.append({"images": [n1, n2], "avg_similarity": score})
+                    processed.update([n1, n2])
+
+        return jsonify({
+            "total_images": len(images),
+            "duplicate_groups": duplicate_groups,
+            "unique_images": len(images) - len(processed)
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(port=5000, debug=True)
