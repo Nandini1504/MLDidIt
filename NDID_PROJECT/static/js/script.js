@@ -3,38 +3,76 @@ const OPTIMAL_THRESHOLD = 0.3442;
 let singleImageBase64 = null;
 let bulkImages = []; // Stores {name, data}
 
-// Initial Sync
-document.getElementById('threshold').value = OPTIMAL_THRESHOLD;
-document.getElementById('threshold-value').innerText = OPTIMAL_THRESHOLD;
-
-// --- CLICK TRIGGERS (FIXED) ---
-document.getElementById('zone-single').addEventListener('click', function(e) {
-    e.preventDefault();
-    document.getElementById('image-single').click();
-});
-
-document.getElementById('zone-bulk').addEventListener('click', function(e) {
-    e.preventDefault();
-    document.getElementById('images-bulk').click();
-});
-
-// --- SCENARIO SWITCHING ---
-function switchMode(mode) {
-    document.querySelectorAll('.scenario-content').forEach(c => c.style.display = 'none');
-    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
-    document.getElementById(`${mode}-content`).style.display = 'block';
-    document.getElementById(`tab-${mode}`).classList.add('active');
-}
-
-// --- SINGLE UPLOAD LOGIC ---
-document.getElementById('image-single').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
+// Wait for DOM to be fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Initial Sync
+    document.getElementById('threshold').value = OPTIMAL_THRESHOLD;
+    document.getElementById('threshold-value').innerText = OPTIMAL_THRESHOLD;
+    
+    // --- TAB SWITCHING ---
+    document.getElementById('tab-scenario1').addEventListener('click', function() {
+        switchMode('scenario1');
+    });
+    
+    document.getElementById('tab-scenario2').addEventListener('click', function() {
+        switchMode('scenario2');
+    });
+    
+    // --- UPLOAD ZONE CLICKS ---
+    const zoneSingle = document.getElementById('zone-single');
+    const imageSingle = document.getElementById('image-single');
+    
+    zoneSingle.addEventListener('click', function() {
+        imageSingle.click();
+    });
+    
+    // Drag and drop for single
+    zoneSingle.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        zoneSingle.style.borderColor = 'var(--primary)';
+    });
+    
+    zoneSingle.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        zoneSingle.style.borderColor = '#334155';
+    });
+    
+    zoneSingle.addEventListener('drop', function(e) {
+        e.preventDefault();
+        zoneSingle.style.borderColor = '#334155';
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            imageSingle.files = files;
+            handleSingleUpload(files[0]);
+        }
+    });
+    
+    const zoneBulk = document.getElementById('zone-bulk');
+    const imagesBulk = document.getElementById('images-bulk');
+    
+    zoneBulk.addEventListener('click', function() {
+        imagesBulk.click();
+    });
+    
+    // --- SINGLE UPLOAD HANDLER ---
+    imageSingle.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            handleSingleUpload(e.target.files[0]);
+        }
+    });
+    
+    function handleSingleUpload(file) {
+        if (!file.type.startsWith('image/')) {
+            alert('Please upload an image file');
+            return;
+        }
+        
         const reader = new FileReader();
-        reader.onload = (ex) => {
+        reader.onload = function(ex) {
             singleImageBase64 = ex.target.result;
             const preview = document.getElementById('preview-single');
-            preview.innerHTML = `<img src="${singleImageBase64}">`;
+            preview.innerHTML = `<img src="${singleImageBase64}" alt="Uploaded image">`;
             preview.style.display = 'block';
             document.getElementById('zone-single').style.display = 'none';
             document.getElementById('remove-single').style.display = 'block';
@@ -42,8 +80,77 @@ document.getElementById('image-single').addEventListener('change', function(e) {
         };
         reader.readAsDataURL(file);
     }
+    
+    // Remove single image
+    document.getElementById('remove-single').addEventListener('click', function() {
+        resetSingle();
+    });
+    
+    // Check duplicate button
+    document.getElementById('checkDuplicateBtn').addEventListener('click', function() {
+        checkDuplicate();
+    });
+    
+    // --- BULK UPLOAD HANDLER ---
+    imagesBulk.addEventListener('change', function(e) {
+        handleBulkUpload(e.target.files);
+    });
+    
+    function handleBulkUpload(files) {
+        const filesArray = Array.from(files);
+        const grid = document.getElementById('bulk-preview-grid');
+        grid.innerHTML = '';
+        bulkImages = [];
+        
+        if (filesArray.length === 0) return;
+        
+        document.getElementById('upload-count').innerText = `Loading ${filesArray.length} images...`;
+        
+        let loadedCount = 0;
+        filesArray.forEach(file => {
+            if (!file.type.startsWith('image/')) {
+                loadedCount++;
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(ex) {
+                bulkImages.push({ name: file.name, data: ex.target.result });
+                const img = document.createElement('img');
+                img.src = ex.target.result;
+                img.alt = file.name;
+                grid.appendChild(img);
+                
+                loadedCount++;
+                if (loadedCount === filesArray.length) {
+                    document.getElementById('upload-count').innerText = `${bulkImages.length} images selected`;
+                    document.getElementById('findDuplicatesBtn').disabled = bulkImages.length < 2;
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+    
+    // Find duplicates button
+    document.getElementById('findDuplicatesBtn').addEventListener('click', function() {
+        findBulkDuplicates();
+    });
+    
+    // --- SLIDER UPDATE ---
+    document.getElementById('threshold').addEventListener('input', function() {
+        document.getElementById('threshold-value').innerText = this.value;
+    });
 });
 
+// --- MODE SWITCHING FUNCTION ---
+function switchMode(mode) {
+    document.querySelectorAll('.scenario-content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(`${mode}-content`).classList.add('active');
+    document.getElementById(`tab-${mode}`).classList.add('active');
+}
+
+// --- RESET SINGLE ---
 function resetSingle() {
     singleImageBase64 = null;
     document.getElementById('preview-single').style.display = 'none';
@@ -54,6 +161,7 @@ function resetSingle() {
     document.getElementById('image-single').value = '';
 }
 
+// --- API CALL: CHECK DUPLICATE ---
 async function checkDuplicate() {
     toggleLoading(true);
     try {
@@ -62,48 +170,25 @@ async function checkDuplicate() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 image: singleImageBase64,
-                threshold: document.getElementById('threshold').value,
+                threshold: parseFloat(document.getElementById('threshold').value),
                 metric: document.getElementById('metric').value
             })
         });
+        
+        if (!response.ok) {
+            throw new Error('Server error: ' + response.status);
+        }
+        
         const data = await response.json();
         renderSingleResults(data);
     } catch (err) { 
+        console.error('Error:', err);
         alert("Error connecting to server: " + err.message); 
     }
     toggleLoading(false);
 }
 
-// --- BULK UPLOAD LOGIC ---
-document.getElementById('images-bulk').addEventListener('change', function(e) {
-    const files = Array.from(e.target.files);
-    const grid = document.getElementById('bulk-preview-grid');
-    grid.innerHTML = '';
-    bulkImages = [];
-
-    let loadedCount = 0;
-    files.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (ex) => {
-            bulkImages.push({ name: file.name, data: ex.target.result });
-            grid.innerHTML += `<img src="${ex.target.result}" alt="${file.name}">`;
-            loadedCount++;
-            
-            // Update UI after all images are loaded
-            if (loadedCount === files.length) {
-                document.getElementById('upload-count').innerText = `${files.length} images selected`;
-                document.getElementById('findDuplicatesBtn').disabled = files.length < 2;
-            }
-        };
-        reader.readAsDataURL(file);
-    });
-    
-    // Show initial count immediately
-    if (files.length > 0) {
-        document.getElementById('upload-count').innerText = `Loading ${files.length} images...`;
-    }
-});
-
+// --- API CALL: FIND BULK DUPLICATES ---
 async function findBulkDuplicates() {
     toggleLoading(true);
     try {
@@ -112,13 +197,19 @@ async function findBulkDuplicates() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 images: bulkImages,
-                threshold: document.getElementById('threshold').value,
+                threshold: parseFloat(document.getElementById('threshold').value),
                 metric: document.getElementById('metric').value
             })
         });
+        
+        if (!response.ok) {
+            throw new Error('Server error: ' + response.status);
+        }
+        
         const data = await response.json();
         renderBulkResults(data);
     } catch (err) { 
+        console.error('Error:', err);
         alert("Error connecting to server: " + err.message); 
     }
     toggleLoading(false);
@@ -149,20 +240,19 @@ function renderSingleResults(data) {
 function renderBulkResults(data) {
     const res = document.getElementById('results-scenario2');
     res.style.display = 'block';
-    document.getElementById('stat-total').innerText = data.total_images;
-    document.getElementById('stat-groups').innerText = data.duplicate_groups.length;
-    document.getElementById('stat-unique').innerText = data.unique_images;
+    document.getElementById('stat-total').innerText = data.total_images || 0;
+    document.getElementById('stat-groups').innerText = data.duplicate_groups ? data.duplicate_groups.length : 0;
+    document.getElementById('stat-unique').innerText = data.unique_images || 0;
 
     const list = document.getElementById('duplicate-groups');
-    list.innerHTML = data.duplicate_groups.map(g => `
-        <div style="border-bottom: 1px solid #334155; padding: 10px;">
-            <p>📁 Group: ${g.images.join(' & ')}</p>
-            <small>Similarity: ${(g.avg_similarity * 100).toFixed(2)}%</small>
-        </div>
-    `).join('');
+    if (data.duplicate_groups && data.duplicate_groups.length > 0) {
+        list.innerHTML = data.duplicate_groups.map(g => `
+            <div>
+                <p>📁 Group: ${g.images.join(' & ')}</p>
+                <small>Similarity: ${(g.avg_similarity * 100).toFixed(2)}%</small>
+            </div>
+        `).join('');
+    } else {
+        list.innerHTML = '<p style="color: var(--success);">No duplicates found!</p>';
+    }
 }
-
-// Slider Display Sync
-document.getElementById('threshold').addEventListener('input', function() {
-    document.getElementById('threshold-value').innerText = this.value;
-});
