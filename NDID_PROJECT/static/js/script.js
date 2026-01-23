@@ -7,9 +7,16 @@ let bulkImages = []; // Stores {name, data}
 document.getElementById('threshold').value = OPTIMAL_THRESHOLD;
 document.getElementById('threshold-value').innerText = OPTIMAL_THRESHOLD;
 
-// --- CLICK TRIGGERS ---
-document.getElementById('zone-single').onclick = () => document.getElementById('image-single').click();
-document.getElementById('zone-bulk').onclick = () => document.getElementById('images-bulk').click();
+// --- CLICK TRIGGERS (FIXED) ---
+document.getElementById('zone-single').addEventListener('click', function(e) {
+    e.preventDefault();
+    document.getElementById('image-single').click();
+});
+
+document.getElementById('zone-bulk').addEventListener('click', function(e) {
+    e.preventDefault();
+    document.getElementById('images-bulk').click();
+});
 
 // --- SCENARIO SWITCHING ---
 function switchMode(mode) {
@@ -20,7 +27,7 @@ function switchMode(mode) {
 }
 
 // --- SINGLE UPLOAD LOGIC ---
-document.getElementById('image-single').onchange = function(e) {
+document.getElementById('image-single').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file) {
         const reader = new FileReader();
@@ -35,7 +42,7 @@ document.getElementById('image-single').onchange = function(e) {
         };
         reader.readAsDataURL(file);
     }
-};
+});
 
 function resetSingle() {
     singleImageBase64 = null;
@@ -61,28 +68,41 @@ async function checkDuplicate() {
         });
         const data = await response.json();
         renderSingleResults(data);
-    } catch (err) { alert("Error connecting to server"); }
+    } catch (err) { 
+        alert("Error connecting to server: " + err.message); 
+    }
     toggleLoading(false);
 }
 
 // --- BULK UPLOAD LOGIC ---
-document.getElementById('images-bulk').onchange = function(e) {
+document.getElementById('images-bulk').addEventListener('change', function(e) {
     const files = Array.from(e.target.files);
     const grid = document.getElementById('bulk-preview-grid');
     grid.innerHTML = '';
     bulkImages = [];
 
+    let loadedCount = 0;
     files.forEach(file => {
         const reader = new FileReader();
         reader.onload = (ex) => {
             bulkImages.push({ name: file.name, data: ex.target.result });
-            grid.innerHTML += `<img src="${ex.target.result}">`;
+            grid.innerHTML += `<img src="${ex.target.result}" alt="${file.name}">`;
+            loadedCount++;
+            
+            // Update UI after all images are loaded
+            if (loadedCount === files.length) {
+                document.getElementById('upload-count').innerText = `${files.length} images selected`;
+                document.getElementById('findDuplicatesBtn').disabled = files.length < 2;
+            }
         };
         reader.readAsDataURL(file);
     });
-    document.getElementById('upload-count').innerText = `${files.length} images selected`;
-    document.getElementById('findDuplicatesBtn').disabled = files.length < 2;
-};
+    
+    // Show initial count immediately
+    if (files.length > 0) {
+        document.getElementById('upload-count').innerText = `Loading ${files.length} images...`;
+    }
+});
 
 async function findBulkDuplicates() {
     toggleLoading(true);
@@ -98,7 +118,9 @@ async function findBulkDuplicates() {
         });
         const data = await response.json();
         renderBulkResults(data);
-    } catch (err) { alert("Error connecting to server"); }
+    } catch (err) { 
+        alert("Error connecting to server: " + err.message); 
+    }
     toggleLoading(false);
 }
 
@@ -141,6 +163,6 @@ function renderBulkResults(data) {
 }
 
 // Slider Display Sync
-document.getElementById('threshold').oninput = function() {
+document.getElementById('threshold').addEventListener('input', function() {
     document.getElementById('threshold-value').innerText = this.value;
-};
+});
