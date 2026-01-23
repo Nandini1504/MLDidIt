@@ -7,3 +7,21 @@ matplotlib>=3.7.0
 tqdm>=4.65.0
 flask>=3.0.0
 flask-cors>=4.0.0
+
+
+transformers>=4.30.0
+
+
+
+opencv-python>=4.7.0
+
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Similarity Search (Optional but recommended)
+faiss-cpu>=1.7.4  # Use faiss-gpu if you have CUDA
+
+tqdm>=4.65.0
+
+# Utilities
+pyyaml>=6.0
