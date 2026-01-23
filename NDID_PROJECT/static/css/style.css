@@ -1,120 +1,44 @@
 :root {
     --primary: #6366f1;
-    --primary-hover: #4f46e5;
     --bg: #0f172a;
-    --card-bg: #1e293b;
+    --card: #1e293b;
     --text: #f8fafc;
-    --text-muted: #94a3b8;
     --success: #22c55e;
     --danger: #ef4444;
 }
 
 body {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Inter', sans-serif;
     background-color: var(--bg);
     color: var(--text);
-    margin: 0;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 100vh;
-}
-
-.container {
-    width: 90%;
-    max-width: 1000px;
-    margin-top: 50px;
-}
-
-header {
-    text-align: center;
-    margin-bottom: 40px;
-}
-
-h1 {
-    font-size: 2.5rem;
-    background: linear-gradient(to right, #818cf8, #c084fc);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-/* Tabs */
-.tabs {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
     justify-content: center;
+    margin: 0;
 }
 
-.mode-tab {
-    padding: 12px 24px;
-    background: var(--card-bg);
-    border: 1px solid #334155;
-    color: var(--text-muted);
-    cursor: pointer;
-    border-radius: 8px;
-    transition: 0.3s;
-}
+.container { width: 90%; max-width: 800px; margin-top: 40px; }
 
-.mode-tab.active {
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
-}
+header h1 { background: linear-gradient(to right, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; }
 
-/* Upload Zones */
-.upload-zone {
-    border: 2px dashed #334155;
-    padding: 40px;
-    text-align: center;
-    border-radius: 12px;
-    background: #1e293b50;
-    cursor: pointer;
-    transition: 0.3s;
-}
+.tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+.mode-tab { flex: 1; padding: 12px; background: var(--card); border: 1px solid #334155; color: white; cursor: pointer; border-radius: 8px; }
+.mode-tab.active { background: var(--primary); }
 
-.upload-zone:hover {
-    border-color: var(--primary);
-    background: #1e293b;
-}
+.control-panel { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+input[type="range"] { width: 100%; margin: 15px 0; }
+select { width: 100%; padding: 10px; border-radius: 8px; background: #0f172a; color: white; border: 1px solid #334155; }
 
-/* Grid for Scenario 2 */
-.bulk-preview-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 15px;
-    margin-top: 20px;
-}
+.upload-zone { border: 2px dashed #334155; padding: 40px; text-align: center; border-radius: 12px; cursor: pointer; transition: 0.3s; }
+.upload-zone:hover { border-color: var(--primary); background: #1e293b; }
+.upload-zone * { pointer-events: none; } /* THE FIX: Allows click to pass through to the div */
 
-.bulk-preview-item img {
-    width: 100%;
-    aspect-ratio: 1/1;
-    object-fit: cover;
-    border-radius: 8px;
-}
+.preview-box img { max-width: 100%; border-radius: 12px; margin: 20px 0; }
+.bulk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 20px; }
+.bulk-grid img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 6px; }
 
-/* Results Card */
-.results-section {
-    background: var(--card-bg);
-    padding: 25px;
-    border-radius: 12px;
-    margin-top: 30px;
-    border: 1px solid #334155;
-}
+.btn-primary { background: var(--primary); width: 100%; padding: 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
+.btn-primary:disabled { opacity: 0.5; }
+.btn-secondary { background: #475569; width: 100%; padding: 10px; border: none; border-radius: 8px; color: white; cursor: pointer; margin-top: 10px; }
 
-button {
-    background: var(--primary);
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    width: 100%;
-    margin-top: 20px;
-}
-
-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
+.results-area { background: var(--card); padding: 20px; border-radius: 12px; margin-top: 20px; text-align: center; }
+.loading-overlay { text-align: center; margin-top: 20px; color: var(--primary); }

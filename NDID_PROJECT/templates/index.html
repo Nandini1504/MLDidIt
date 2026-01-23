@@ -12,7 +12,7 @@
 <div class="container">
     <header>
         <h1>🖼️ NDID System</h1>
-        <p style="color: var(--text-muted)">Near-Duplicate Image Detection powered by ResNet50</p>
+        <p>Near-Duplicate Image Detection powered by ResNet50</p>
     </header>
 
     <div class="tabs">
@@ -20,10 +20,12 @@
         <button class="mode-tab" id="tab-scenario2" onclick="switchMode('scenario2')">Bulk Upload</button>
     </div>
 
-    <div class="results-section" style="margin-bottom: 20px;">
-        <label>Similarity Threshold: <span id="threshold-value">0.34</span></label>
-        <input type="range" id="threshold" min="0" max="1" step="0.01" value="0.4126" style="width: 100%;">
-        <select id="metric" style="margin-top: 10px; width: 100%; padding: 8px; border-radius: 5px;">
+    <div class="control-panel">
+        <div class="slider-header">
+            <label>Similarity Threshold: <span id="threshold-value">0.3442</span></label>
+        </div>
+        <input type="range" id="threshold" min="0" max="1" step="0.0001" value="0.3442">
+        <select id="metric">
             <option value="cosine">Metric: Cosine Similarity</option>
             <option value="euclidean">Metric: Euclidean Distance</option>
         </select>
@@ -35,30 +37,36 @@
             <p>Drag & Drop or Click to Upload Image</p>
             <input type="file" id="image-single" hidden accept="image/*">
         </div>
-        <div id="preview-single" style="display:none; text-align:center;"></div>
-        <button id="checkDuplicateBtn" disabled onclick="checkDuplicate()">Run AI Analysis</button>
+        <div id="preview-single" class="preview-box" style="display:none;"></div>
+        <button id="remove-single" class="btn-secondary" style="display:none;" onclick="resetSingle()">Remove Image</button>
+        <button id="checkDuplicateBtn" class="btn-primary" disabled onclick="checkDuplicate()">Run AI Analysis</button>
+        
+        <div id="results-scenario1" class="results-area" style="display:none;">
+            <div id="badge-icon-s1"></div>
+            <h2 id="status-text-s1"></h2>
+        </div>
     </div>
 
     <div id="scenario2-content" class="scenario-content" style="display:none;">
         <div class="upload-zone" id="zone-bulk">
             <i class="fas fa-images fa-3x"></i>
-            <p>Upload Multiple Images for Comparison</p>
+            <p>Click to Upload Multiple Images</p>
             <input type="file" id="images-bulk" hidden multiple accept="image/*">
         </div>
         <p id="upload-count">0 images selected</p>
-        <div id="bulk-preview-grid" class="bulk-preview-grid"></div>
-        <button id="findDuplicatesBtn" disabled onclick="findDuplicates()">Find Duplicates</button>
+        <div id="bulk-preview-grid" class="bulk-grid"></div>
+        <button id="findDuplicatesBtn" class="btn-primary" disabled onclick="findBulkDuplicates()">Find Duplicates</button>
+        
+        <div id="results-scenario2" class="results-area" style="display:none;">
+            <h3>Results Summary</h3>
+            <p>Total: <span id="stat-total">0</span> | Groups: <span id="stat-groups">0</span> | Unique: <span id="stat-unique">0</span></p>
+            <div id="duplicate-groups"></div>
+        </div>
     </div>
 
-    <div id="loading" style="display:none; text-align:center; padding: 20px;">
-        <i class="fas fa-spinner fa-spin fa-2x"></i>
-        <p>AI is processing...</p>
-    </div>
-
-    <div id="results-scenario2" class="results-section" style="display:none;">
-        <h3>Results Summary</h3>
-        <p>Total: <span id="stat-total">0</span> | Groups: <span id="stat-groups">0</span> | Unique: <span id="stat-unique">0</span></p>
-        <div id="duplicate-groups"></div>
+    <div id="loading" class="loading-overlay" style="display:none;">
+        <i class="fas fa-spinner fa-spin fa-3x"></i>
+        <p>AI analyzing vectors...</p>
     </div>
 </div>
 
