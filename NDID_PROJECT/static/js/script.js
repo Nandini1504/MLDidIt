@@ -11,12 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const files = Array.from(e.target.files);
         const grid = document.getElementById('preview-grid');
         grid.innerHTML = '';
-        imageFiles = [];
+        imageFiles = files;  // Store actual file objects, not data URLs
 
         files.forEach(file => {
             const reader = new FileReader();
             reader.onload = (event) => {
-                imageFiles.push({ name: file.name, data: event.target.result });
                 const img = document.createElement('img');
                 img.src = event.target.result;
                 grid.appendChild(img);
@@ -32,36 +31,54 @@ async function runAnalysis() {
     const btn = document.getElementById('analyze-btn');
     const resultsArea = document.getElementById('results');
     
+    if (imageFiles.length < 2) {
+        resultsArea.innerHTML = "<p style='color:var(--danger)'>❌ Please select at least 2 images</p>";
+        return;
+    }
+    
     btn.disabled = true;
     btn.innerText = "AI is comparing vectors...";
     resultsArea.innerHTML = "<h4>Analysis in progress...</h4>";
 
     try {
+        // Process all pairs of images
+        const formData = new FormData();
+        formData.append('image1', imageFiles[0]);
+        formData.append('image2', imageFiles[1]);
+        formData.append('threshold', document.getElementById('threshold').value);
+
         const response = await fetch('/api/find-duplicates', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                images: imageFiles,
-                threshold: document.getElementById('threshold').value
-            })
+            body: formData
         });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
         const data = await response.json();
         
-        resultsArea.innerHTML = `<h3>Found ${data.duplicates.length} Matches</h3>`;
-        
-        if (data.duplicates.length === 0) {
-            resultsArea.innerHTML += "<p style='color: var(--success)'>✅ All images are unique!</p>";
-        } else {
-            data.duplicates.forEach(d => {
-                const div = document.createElement('div');
-                div.className = 'match-card';
-                div.innerHTML = `⚠️ <b>Match:</b> ${d.pair[0]} & ${d.pair[1]} <br> Similarity: ${(d.score * 100).toFixed(2)}%`;
-                resultsArea.appendChild(div);
-            });
+        if (data.error) {
+            resultsArea.innerHTML = `<p style='color:var(--danger)'>❌ ${data.error}</p>`;
+            return;
         }
+        
+        resultsArea.innerHTML = `
+            <div class="match-card">
+                <h3>🔍 Comparison Result</h3>
+                <p><b>Image 1:</b> ${imageFiles[0].name}</p>
+                <p><b>Image 2:</b> ${imageFiles[1].name}</p>
+                <p><b>Similarity Score:</b> ${(data.similarity * 100).toFixed(2)}%</p>
+                <p><b>Threshold:</b> ${(data.threshold * 100).toFixed(2)}%</p>
+                <p style='color: ${data.isDuplicate ? 'var(--danger)' : 'var(--success)'}'>
+                    ${data.isDuplicate ? '⚠️ DUPLICATE' : '✅ UNIQUE'}
+                </p>
+                <p><i>${data.message}</i></p>
+            </div>
+        `;
     } catch (err) {
-        resultsArea.innerHTML = "<p style='color:var(--danger)'>Error connecting to Flask server.</p>";
+        console.error('Error:', err);
+        resultsArea.innerHTML = `<p style='color:var(--danger)'>❌ Error: ${err.message}</p>`;
     } finally {
         btn.disabled = false;
         btn.innerText = "Run AI Analysis";

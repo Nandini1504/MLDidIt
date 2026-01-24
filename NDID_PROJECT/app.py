@@ -1,17 +1,20 @@
 import os
 import sys
+
+# Disable xFormers BEFORE importing torch
+os.environ['XFORMERS_DISABLED'] = '1'
+
+# Block xFormers module loading entirely
+sys.modules['xformers'] = None
+sys.modules['xformers.ops'] = None
+
 import torch
-import gdown
 from flask import Flask, render_template, request, jsonify
 from PIL import Image
 import io
 from torchvision import transforms
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
-
-# --- CONFIGURATION ---
-GOOGLE_DRIVE_ID = '1IaGdTjV3O5KklKeqAUtqFHUm99zNoV7I' 
-WEIGHTS_PATH = 'weights/model_final.pth'
 
 # --- IMAGE PREPROCESSING TRANSFORM ---
 TRANSFORM = transforms.Compose([
@@ -21,44 +24,19 @@ TRANSFORM = transforms.Compose([
                         std=[0.229, 0.224, 0.225])
 ])
 
-def download_weights():
-    """Download model weights from Google Drive if missing"""
-    if not os.path.exists('weights'):
-        os.makedirs('weights')
-    
-    # Check if file is missing OR empty (0 bytes)
-    if not os.path.exists(WEIGHTS_PATH) or os.path.getsize(WEIGHTS_PATH) == 0:
-        print("📥 Model file is empty or missing. Downloading weights...")
-        url = f'https://drive.google.com/uc?id={GOOGLE_DRIVE_ID}'
-        try:
-            gdown.download(url, WEIGHTS_PATH, quiet=False)
-            print("✅ Weights downloaded successfully!")
-        except Exception as e:
-            print(f"❌ Download failed: {e}")
-
-# Call this before the app starts
-download_weights()
-
 # --- LOAD MODEL ---
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"🖥️ Using device: {device}")
+print(f"🔧 xFormers disabled: {os.environ.get('XFORMERS_DISABLED', 'NOT SET')}")
 
-# Import model ONLY ONCE - with proper error handling
 model = None
-# ...existing code...
 
 try:
     from model_utils import SiameseBackbone
+    print("⏳ Loading DINOv2 model (this may take a minute on first run)...")
     model = SiameseBackbone().to(device)
-    
-    # Load the weights into the architecture
-    if os.path.exists(WEIGHTS_PATH):
-        model.load_state_dict(torch.load(WEIGHTS_PATH, map_location=device, weights_only=False))
-        model.eval()
-        print("✅ AI Model initialized with weights successfully.")
-    else:
-        model.eval()
-        print("⚠️ Model loaded but weights file not found.")
+    model.eval()
+    print("✅ AI Model initialized successfully with DINOv2.")
 except ImportError as e:
     print(f"❌ ERROR: Could not import SiameseBackbone")
     print(f"   Make sure 'model_utils.py' exists in: {os.getcwd()}")
@@ -68,15 +46,23 @@ except Exception as e:
     print(f"❌ Error loading model: {e}")
     sys.exit(1)
 
-# ...existing code...
-
 def preprocess_image(image_file):
     """Convert image file to normalized tensor"""
     try:
-        img = Image.open(io.BytesIO(image_file.read())).convert('RGB')
+        print(f"      [preprocess] Reading file: {image_file.filename}")
+        image_data = image_file.read()
+        print(f"      [preprocess] File size: {len(image_data)} bytes")
+        
+        img = Image.open(io.BytesIO(image_data)).convert('RGB')
+        print(f"      [preprocess] Image mode: {img.mode}, Size: {img.size}")
+        
         img_tensor = TRANSFORM(img).unsqueeze(0)
+        print(f"      [preprocess] Tensor shape: {img_tensor.shape}")
         return img_tensor
     except Exception as e:
+        print(f"      [preprocess] Error: {e}")
+        import traceback
+        traceback.print_exc()
         raise ValueError(f"Image processing failed: {str(e)}")
 
 @app.route('/')
@@ -87,10 +73,22 @@ def home():
     except Exception as e:
         return f"❌ templates/index.html not found<br>Error: {e}", 404
 
+@app.route('/api/health')
+def health():
+    """Health check endpoint"""
+    return jsonify({
+        'status': 'ok',
+        'model': 'loaded' if model is not None else 'not loaded',
+        'device': str(device)
+    })
+
 @app.route('/api/find-duplicates', methods=['POST'])
 def find_duplicates():
-    """Handle image duplicate detection via Siamese network"""
+    """Handle image duplicate detection via DINOv2 embeddings"""
     try:
+        print("🔍 Received request to /api/find-duplicates")
+        print(f"   Files in request: {list(request.files.keys())}")
+        
         if 'image1' not in request.files or 'image2' not in request.files:
             return jsonify({'error': 'Two images required'}), 400
         
@@ -100,21 +98,72 @@ def find_duplicates():
         if image1.filename == '' or image2.filename == '':
             return jsonify({'error': 'Both images must have filenames'}), 400
         
-        img1_tensor = preprocess_image(image1)
-        img2_tensor = preprocess_image(image2)
+        print(f"   Processing: {image1.filename} vs {image2.filename}")
+        
+        # Reset file pointers to beginning
+        image1.seek(0)
+        image2.seek(0)
+        
+        try:
+            img1_tensor = preprocess_image(image1)
+            image1.seek(0)  # Reset for any potential second read
+            img2_tensor = preprocess_image(image2)
+            print(f"   ✅ Images preprocessed")
+        except Exception as e:
+            print(f"   ❌ Preprocessing error: {e}")
+            raise
+        
+        print(f"   Tensor shapes - img1: {img1_tensor.shape}, img2: {img2_tensor.shape}")
         
         img1_tensor = img1_tensor.to(device)
         img2_tensor = img2_tensor.to(device)
         
-        with torch.no_grad():
-            embedding1 = model(img1_tensor)
-            embedding2 = model(img2_tensor)
+        print("   Running model inference...")
+        try:
+            with torch.no_grad():
+                print(f"      Calling model.forward() for image1...")
+                embedding1 = model(img1_tensor)
+                print(f"      ✅ Image1 embedding computed: {embedding1.shape}")
+                
+                print(f"      Calling model.forward() for image2...")
+                embedding2 = model(img2_tensor)
+                print(f"      ✅ Image2 embedding computed: {embedding2.shape}")
+        except Exception as e:
+            print(f"   ❌ Model inference error: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
         
-        similarity = torch.nn.functional.cosine_similarity(embedding1, embedding2)
-        similarity_score = similarity.item()
+        print(f"   Embedding shapes - emb1: {embedding1.shape}, emb2: {embedding2.shape}")
         
-        threshold = 0.7
-        is_duplicate = similarity_score > threshold
+        # Squeeze batch dimension to get [feature_dim]
+        try:
+            embedding1 = embedding1.squeeze(0)  
+            embedding2 = embedding2.squeeze(0)
+            print(f"   ✅ Squeezed embedding shapes - emb1: {embedding1.shape}, emb2: {embedding2.shape}")
+        except Exception as e:
+            print(f"   ❌ Squeeze error: {e}")
+            raise
+        
+        # Calculate cosine similarity with properly shaped tensors
+        try:
+            similarity = torch.nn.functional.cosine_similarity(embedding1.unsqueeze(0), embedding2.unsqueeze(0))
+            similarity_score = similarity.item()
+            print(f"   ✅ Similarity computed: {similarity_score:.4f}")
+        except Exception as e:
+            print(f"   ❌ Cosine similarity error: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
+        
+        # Get threshold from request or use default
+        try:
+            threshold = float(request.form.get('threshold', 0.7))
+            is_duplicate = similarity_score > threshold
+            print(f"   ✅ Threshold: {threshold}, Duplicate: {is_duplicate}")
+        except Exception as e:
+            print(f"   ❌ Threshold/duplicate check error: {e}")
+            raise
         
         return jsonify({
             'isDuplicate': is_duplicate,
@@ -124,8 +173,14 @@ def find_duplicates():
         })
     
     except ValueError as e:
+        print(f"❌ ValueError: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 400
     except Exception as e:
+        print(f"❌ Exception in /api/find-duplicates: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 if __name__ == '__main__':
