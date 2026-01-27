@@ -2,35 +2,156 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NDID | AI Duplicate Detector</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE MIRROR OF MAYA - NDID | AI Duplicate Detector</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <h1>NDID System</h1>
-        <p class="subtitle">Upload images to find near-duplicates using AI</p>
+    <!-- Landing Portal Section -->
+    <section id="landing-portal" class="landing-section">
+        <div class="ancient-background"></div>
+        <div class="portal-container">
+            <div class="manuscript-ornament top">✦ ❖ ✦</div>
+            <h1 class="portal-title">THE MIRROR OF MAYA</h1>
+            <div class="divider-line"></div>
+            <p class="portal-subtitle">Where Illusion Meets Reality</p>
+            <p class="portal-description">A divine tool to pierce through Maya's veil and reveal hidden truths</p>
+            <button class="enter-btn" onclick="enterWorld()">
+                <span class="btn-ornament-left">॥</span>
+                <span class="btn-text">Enter the Divine Realm</span>
+                <span class="btn-ornament-right">॥</span>
+            </button>
+            <div class="manuscript-ornament bottom">✦ ❖ ✦</div>
+            <div class="scroll-indicator">
+                <i class="fas fa-chevron-down"></i>
+            </div>
+        </div>
+    </section>
 
-        <div class="control-group">
-            <label>Similarity Threshold: <b id="threshold-val">0.4126</b></label>
-            <input type="range" id="threshold" min="0" max="1" step="0.0001" value="0.4126">
+    <!-- Main Application Section -->
+    <section id="main-app" class="app-section">
+        <div class="ancient-background"></div>
+        
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <div class="hero-content">
+                <div class="verse-mark">॥</div>
+                <h2 class="hero-title">Unveil the Truth</h2>
+                <div class="verse-mark">॥</div>
+                <p class="hero-text">In the epic Ramayana, Lord Rama possessed divine vision to see through all illusions. This sacred tool channels that power to reveal duplicate images hidden in the maya of data.</p>
+            </div>
         </div>
 
-        <label for="file-input" class="upload-label">
-            <i class="fas fa-cloud-upload-alt"></i>
-            <span>Click to select multiple images</span>
-            <input type="file" id="file-input" multiple accept="image/*" style="display:none">
-        </label>
+        <!-- Application Container -->
+        <div class="container">
+            <div class="manuscript-border"></div>
+            <h1>THE MIRROR OF MAYA</h1>
+            <div class="subtitle-ornament">
+                <span class="ornament-left">✦</span>
+                <p class="subtitle">Where Divine Vision Reveals Hidden Truths</p>
+                <span class="ornament-right">✦</span>
+            </div>
+            
+            <div class="control-group">
+                <label>Sacred Similarity Threshold: <b id="threshold-val">0.4126</b></label>
+                <input type="range" id="threshold" min="0" max="1" step="0.0001" value="0.4126">
+            </div>
+            
+            <label for="file-input" class="upload-label">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span>Offer Your Images to the Divine Mirror</span>
+                <input type="file" id="file-input" multiple accept="image/*" style="display:none">
+            </label>
+            
+            <div id="preview-grid" class="preview-grid"></div>
+            
+            <button id="analyze-btn" class="analyze-btn" disabled onclick="runAnalysis()">
+                <span class="btn-text">Invoke Divine Analysis</span>
+            </button>
+            
+            <div id="results" class="results-area"></div>
+        </div>
 
-        <div id="preview-grid" class="preview-grid"></div>
+        <!-- Features Section -->
+        <div class="features-section">
+            <div class="section-header">
+                <div class="header-ornament">✦ ❖ ✦</div>
+                <h2 class="section-title">Powers of the Divine Mirror</h2>
+                <div class="header-ornament">✦ ❖ ✦</div>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔱</div>
+                    <h3>Divine Detection</h3>
+                    <div class="feature-divider"></div>
+                    <p>Powered by sacred AI algorithms to pierce through digital illusions</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Swift as Hanuman</h3>
+                    <div class="feature-divider"></div>
+                    <p>Lightning-fast analysis of thousands of images in moments</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Precise as Rama's Arrow</h3>
+                    <div class="feature-divider"></div>
+                    <p>Adjustable threshold for perfect accuracy in detection</p>
+                </div>
+            </div>
+        </div>
 
-        <button id="analyze-btn" class="analyze-btn" disabled onclick="runAnalysis()">
-            Run AI Analysis
-        </button>
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-ornament">✦ ❖ ✦</div>
+            <p>May truth always prevail over illusion</p>
+            <p class="footer-verse">सत्यमेव जयते</p>
+            <div class="footer-ornament">✦ ❖ ✦</div>
+        </div>
+    </section>
 
-        <div id="results" class="results-area"></div>
-    </div>
+    <script>
+        function enterWorld() {
+            const landing = document.getElementById('landing-portal');
+            const mainApp = document.getElementById('main-app');
+            
+            landing.style.opacity = '0';
+            landing.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+                landing.style.display = 'none';
+                mainApp.style.display = 'block';
+                setTimeout(() => {
+                    mainApp.style.opacity = '1';
+                    mainApp.style.transform = 'translateY(0)';
+                }, 50);
+            }, 600);
+        }
 
+        // Scroll indicator animation
+        document.addEventListener('DOMContentLoaded', () => {
+            const scrollIndicator = document.querySelector('.scroll-indicator');
+            if (scrollIndicator) {
+                setInterval(() => {
+                    scrollIndicator.style.animation = 'none';
+                    setTimeout(() => {
+                        scrollIndicator.style.animation = 'bounce 2s ease-in-out infinite';
+                    }, 10);
+                }, 2000);
+            }
+        });
+
+        // Threshold slider update
+        const thresholdSlider = document.getElementById('threshold');
+        const thresholdVal = document.getElementById('threshold-val');
+        
+        if (thresholdSlider && thresholdVal) {
+            thresholdSlider.addEventListener('input', function() {
+                thresholdVal.textContent = this.value;
+            });
+        }
+    </script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
